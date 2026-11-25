@@ -25,13 +25,10 @@ Spec   InputSpec();
 void   Create(Student* p, const int N);
 void   PrintHeader();
 void   PrintRow(const Student s, const int number);
-void   PrintFooter();
 void   Print(Student* p, const int N);
 void   PrintIndexSorted(Student* p, int* I, const int N);
 string SpecName(const Spec spec);
 string Pad(const string s, const int width);
-bool   IsGreater(const Student a, const Student b);
-bool   MustSwap(const Student a, const Student b);
 void   Sort(Student* p, const int N);
 int*   IndexSort(Student* p, const int N);
 int    BinSearch(Student* p, int* I, const int N,

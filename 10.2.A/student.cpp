@@ -3,23 +3,22 @@
 #include "student.h"
 using namespace std;
 
-// вводить ціле число від min до max, поки користувач не введе правильно
+// вводить ціле число від min до max (з перевіркою)
 int InputInt(const string prompt, const int min, const int max)
 {
     int x;
-    while (true)
+    cout << prompt;
+    cin >> x;
+    while (cin.fail() || x < min || x > max)
     {
-        cout << prompt;
-        if (cin >> x && x >= min && x <= max)
-        {
-            cin.ignore(1000, '\n');   // видаляємо решту рядка
-            return x;
-        }
-        cin.clear();                  // скидаємо помилку введення
-        cin.ignore(1000, '\n');       // видаляємо неправильні символи
-        cout << "Помилка! Введіть ціле число від "
-             << min << " до " << max << "." << endl;
+        cin.clear();               // знімаємо помилку введення
+        cin.ignore(1000, '\n');    // видаляємо неправильні символи
+        cout << "Помилка! Введіть число від " << min
+             << " до " << max << ": ";
+        cin >> x;
     }
+    cin.ignore(1000, '\n');        // видаляємо решту рядка
+    return x;
 }
 
 // вводить спеціальність (з перевіркою)
@@ -76,19 +75,13 @@ void PrintRow(const Student s, const int number)
          << " | " << Pad(to_string(s.inform), 12) << " |" << endl;
 }
 
-// вивід нижньої лінії таблиці
-void PrintFooter()
-{
-    cout << string(97, '=') << endl << endl;
-}
-
 // вивід масиву студентів у вигляді таблиці
 void Print(Student* p, const int N)
 {
     PrintHeader();
     for (int i = 0; i < N; i++)
         PrintRow(p[i], i + 1);
-    PrintFooter();
+    cout << string(97, '=') << endl << endl;
 }
 
 // вивід масиву в порядку, який задає індексний масив I
@@ -97,7 +90,7 @@ void PrintIndexSorted(Student* p, int* I, const int N)
     PrintHeader();
     for (int i = 0; i < N; i++)
         PrintRow(p[I[i]], i + 1);
-    PrintFooter();
+    cout << string(97, '=') << endl << endl;
 }
 
 // повертає назву спеціальності
@@ -130,32 +123,21 @@ string Pad(const string s, const int width)
     return result;
 }
 
-// чи студент a має стояти після студента b при порядку:
-// курс (зростання), спеціальність (зростання), прізвище (зростання)
-bool IsGreater(const Student a, const Student b)
-{
-    return (a.kurs > b.kurs)
-        || (a.kurs == b.kurs && a.spec > b.spec)
-        || (a.kurs == b.kurs && a.spec == b.spec && a.prizv > b.prizv);
-}
-
-// чи треба поміняти місцями сусідніх студентів a і b при фізичному
-// впорядкуванні: курс (зростання), спеціальність (зростання),
-// прізвище (спадання)
-bool MustSwap(const Student a, const Student b)
-{
-    return (a.kurs > b.kurs)
-        || (a.kurs == b.kurs && a.spec > b.spec)
-        || (a.kurs == b.kurs && a.spec == b.spec && a.prizv < b.prizv);
-}
-
-// фізичне впорядкування масиву (метод "бульбашки")
+// фізичне впорядкування масиву (метод "бульбашки"):
+// курс (зростання), спеціальність (зростання), прізвище (спадання)
 void Sort(Student* p, const int N)
 {
     Student tmp;
     for (int i0 = 0; i0 < N - 1; i0++)
         for (int i1 = 0; i1 < N - i0 - 1; i1++)
-            if (MustSwap(p[i1], p[i1 + 1]))
+            if ((p[i1].kurs > p[i1 + 1].kurs)
+                ||
+                (p[i1].kurs == p[i1 + 1].kurs &&
+                 p[i1].spec > p[i1 + 1].spec)
+                ||
+                (p[i1].kurs == p[i1 + 1].kurs &&
+                 p[i1].spec == p[i1 + 1].spec &&
+                 p[i1].prizv < p[i1 + 1].prizv))
             {
                 tmp = p[i1];
                 p[i1] = p[i1 + 1];
@@ -163,44 +145,58 @@ void Sort(Student* p, const int N)
             }
 }
 
-// повертає індексний масив (метод вставки): сам масив p не змінюється
+// індексне впорядкування (метод вставки): повертає індексний масив,
+// сам масив p не змінюється;
+// курс, спеціальність, прізвище - за зростанням
 int* IndexSort(Student* p, const int N)
 {
-    int* I = new int[N];       // створили індексний масив
+    int* I = new int[N];       // створюємо індексний масив
     for (int i = 0; i < N; i++)
-        I[i] = i;              // заповнили початковими даними
+        I[i] = i;              // заповнюємо його числами 0, 1, 2, ...
 
     int i, j, value;
     for (i = 1; i < N; i++)
     {
         value = I[i];
-        for (j = i - 1; j >= 0 && IsGreater(p[I[j]], p[value]); j--)
+        for (j = i - 1;
+             j >= 0 && ((p[I[j]].kurs > p[value].kurs)
+                        ||
+                        (p[I[j]].kurs == p[value].kurs &&
+                         p[I[j]].spec > p[value].spec)
+                        ||
+                        (p[I[j]].kurs == p[value].kurs &&
+                         p[I[j]].spec == p[value].spec &&
+                         p[I[j]].prizv > p[value].prizv));
+             j--)
+        {
             I[j + 1] = I[j];
+        }
         I[j + 1] = value;
     }
     return I;
 }
 
 // бінарний пошук за індексним масивом I (курс, спеціальність, прізвище)
-// повертає номер елемента в масиві p або -1, якщо студента немає
+// повертає номер студента в масиві p або -1, якщо його немає
 int BinSearch(Student* p, int* I, const int N,
               const string prizv, const int kurs, const Spec spec)
 {
-    Student key = {};          // студент із шуканими даними
-    key.prizv = prizv;
-    key.kurs = kurs;
-    key.spec = spec;
-
     int L = 0, R = N - 1, m;
     while (L <= R)
     {
         m = (L + R) / 2;
-        if (IsGreater(p[I[m]], key))
-            R = m - 1;
-        else if (IsGreater(key, p[I[m]]))
+        if (p[I[m]].kurs == kurs && p[I[m]].spec == spec
+            && p[I[m]].prizv == prizv)
+            return I[m];
+        if ((p[I[m]].kurs < kurs)
+            ||
+            (p[I[m]].kurs == kurs && p[I[m]].spec < spec)
+            ||
+            (p[I[m]].kurs == kurs && p[I[m]].spec == spec
+             && p[I[m]].prizv < prizv))
             L = m + 1;
         else
-            return I[m];
+            R = m - 1;
     }
     return -1;
 }
