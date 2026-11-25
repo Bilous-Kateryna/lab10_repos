@@ -1,4 +1,4 @@
-// student.cpp — реалізація функцій
+// student.cpp — реалізація функцій.
 #include <iostream>
 #include "student.h"
 using namespace std;
